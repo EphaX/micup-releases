@@ -39,7 +39,12 @@ function Get-V1Entry {
 	foreach ($root in $uninstallRoots) {
 		foreach ($key in "{$v1Guid}", $v1Guid) {
 			$entry = Get-ItemProperty (Join-Path $root $key) -ErrorAction SilentlyContinue
-			if ($entry) { return [pscustomobject]@{Key = Join-Path $root $key; InstallLocation = $entry.InstallLocation} }
+			if ($entry) {
+				# v1 (electron-builder NSIS) may leave InstallLocation empty; the uninstaller sits in the install dir.
+				$location = $entry.InstallLocation
+				if (-not $location -and $entry.UninstallString) { $location = Split-Path ($entry.UninstallString -replace '^"([^"]+)".*$', '$1') }
+				return [pscustomobject]@{Key = Join-Path $root $key; InstallLocation = $location}
+			}
 		}
 	}
 	return $null
@@ -60,7 +65,11 @@ function Install-V1([switch]$AllUsers) {
 }
 
 function Invoke-Bridge([string]$path) {
-	(Start-Process $path -ArgumentList $bridgeArgs -Wait -PassThru).ExitCode
+	# -Wait would also wait for v2, which the bridge starts and leaves running; wait for the bridge alone.
+	$process = Start-Process $path -ArgumentList $bridgeArgs -PassThru
+	$null = $process.Handle
+	$process.WaitForExit()
+	$process.ExitCode
 }
 
 function Test-V2Owns-Protocol {
