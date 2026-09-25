@@ -1,0 +1,47 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# Micup v1 -> v2 bridge end-to-end test on a clean Windows runner (replaces Windows Sandbox).
+# Runs the draft v1.0.0 bridge release bytes; draft stays invisible to v1 clients.
+name: kopru-e2e
+on:
+  push:
+    branches: [kopru-e2e]
+permissions:
+  contents: write
+jobs:
+  e2e:
+    strategy:
+      fail-fast: false
+      matrix:
+        senaryo: [direct, updater, allusers]
+    runs-on: windows-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Hazirlik
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          New-Item -ItemType Directory C:\micup-bridge\bozuk -Force | Out-Null
+          Copy-Item run-e2e.ps1 C:\micup-bridge\
+          Copy-Item bozuk\* C:\micup-bridge\bozuk\
+          gh release download v1.0.0 -R EphaX/micup-releases -D C:\micup-bridge
+          $h = (Get-FileHash C:\micup-bridge\Micup-Setup-1.0.0-x64.exe -Algorithm SHA256).Hash.ToLower()
+          if ($h -ne '02aa3e40cf7c4e9327c57d32417259b82f5e00df415c2d0bf549f0a9d304013d') { throw "sha256 $h" }
+      - name: Senaryo
+        continue-on-error: true
+        shell: powershell
+        run: powershell -NoProfile -ExecutionPolicy Bypass -File C:\micup-bridge\run-e2e.ps1 -Scenario ${{ matrix.senaryo }}
+      - name: Sonuc
+        if: always()
+        shell: pwsh
+        run: |
+          Get-Content C:\micup-bridge\bridge-sonuc.txt
+          Get-ChildItem C:\micup-bridge\micup-bridge*.log -ErrorAction SilentlyContinue | ForEach-Object { "== $($_.Name)"; Get-Content $_ }
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: kopru-${{ matrix.senaryo }}
+          path: |
+            C:\micup-bridge\bridge-sonuc.txt
+            C:\micup-bridge\micup-bridge*.log

@@ -1,0 +1,9 @@
+version: 1.0.0
+files:
+  - url: Micup-Setup-1.0.0-x64.exe
+    sha512: DA1kgmcjBZByanKNPq+B0lqertQ5FSq3pcaOC0nTw+Vq9CnpQFQvFdfbALq3G+WHWOKaU0KRbyYXcyAPnFyS/g==
+    size: 81733
+path: Micup-Setup-1.0.0-x64.exe
+sha512: DA1kgmcjBZByanKNPq+B0lqertQ5FSq3pcaOC0nTw+Vq9CnpQFQvFdfbALq3G+WHWOKaU0KRbyYXcyAPnFyS/g==
+releaseDate: '2026-09-24T21:29:49.490Z'
+stagingPercentage: 100
